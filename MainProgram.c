@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+// Konstanta
+
 #define JUMLAH_HARI 30
 #define SHIFT_PER_HARI 3
 #define JUMLAH_SHIFT_PER_MINGGU 21
+#define MAKS_DOKTER_PER_SHIFT 3
 
 // Deklarasi Variabel Data ------------------------------------------------------------------------
 
@@ -16,10 +20,10 @@ typedef struct dokter{
     int currShift;
 }dokter;
 
-typedef struct shift{
-    dokter* dokter;
-    int count_doc; // hitung dokter yang ada di shift
-}shift;
+typedef struct shift {
+    dokter** dokter;
+    int count_doc;
+} shift;
 
 
 typedef struct hari{
@@ -99,10 +103,11 @@ void tampilkanDokter(dokter* daftar, int jumlah) {
     }
 }
 
-void bacaFile(const char* namaFile, dokter** daftar, int* jumlah, int* kapasitas) {
+void bacaFile(const char* namaFile, dokter** daftar, int* jumlah, int* kapasitas, int* berhasilmembaca) {
     FILE* file = fopen(namaFile, "r");
     if (file == NULL) {
         printf("Gagal membuka file: %s\n", namaFile);
+        berhasilmembaca = 0;
         return;
     }
 
@@ -128,15 +133,16 @@ void bacaFile(const char* namaFile, dokter** daftar, int* jumlah, int* kapasitas
 
         tambahDokter(daftar, jumlah, kapasitas, baru);
     }
+    *berhasilmembaca = 1;
 
     fclose(file);
     printf("Berhasil membaca data dari file '%s'.\n", namaFile);
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 // Fungsi 2 - Assign Jadwal Dokter --------------------------------------------------------------------
+
+// Fungsi menyalin daftar dokter
 
 dokter* salinDaftarDokter(dokter* sumber, int jumlah) {
     dokter* temp = malloc(sizeof(dokter) * jumlah);
@@ -146,6 +152,7 @@ dokter* salinDaftarDokter(dokter* sumber, int jumlah) {
     return temp;
 }
 
+// Menghitung total shift yang bisa diisi semua dokter
 int HitungJumlahShift(dokter* daftardokter, int jumlah){
     int totalDokter = 0;
     for (int i = 0; i < jumlah; i++) {
@@ -154,12 +161,14 @@ int HitungJumlahShift(dokter* daftardokter, int jumlah){
     return totalDokter;
 }
 
+// Reset shift mingguan ke 0 di awal minggu
 void resetMingguan(dokter* daftardokter_, int jumlah) {
     for (int i = 0; i < jumlah; i++) {
-        daftardokter_[i].shiftmingguan = daftarDokter[i].maxShift;
+        daftardokter_[i].shiftmingguan = 0;
     }
 }
 
+// Urutkan dokter berdasarkan jumlah shift yang sudah diambil
 void bubbleSortDokter(dokter *daftardokter_, int jumlah) {
     for (int i = 0; i < jumlah - 1; i++) {
         for (int j = 0; j < jumlah - i - 1; j++) {
@@ -172,34 +181,116 @@ void bubbleSortDokter(dokter *daftardokter_, int jumlah) {
     }
 }
 
-void AssignDokter(){
-  //////////////////////////////////////////////////////////////////////////////////////////////////////
+// Menugaskan dokter ke shift sesuai preferensi
+void AssignDokter(shift* daftarDokterPerShift_, dokter *daftardokter_, int jenisShift, int* jumlah_dokter, int totalShifttersedia){
+    int maksimum_dokter;
+    const char* shiftLabel[] = {"pagi", "siang", "malam"};
+    daftarDokterPerShift_->count_doc = 0;
+    
+    int batas_shift = MAKS_DOKTER_PER_SHIFT * 21;
+
+    // Cek apakah total shift tersedia mencukupi atau tidak
+    if (totalShifttersedia < batas_shift){
+        maksimum_dokter = totalShifttersedia / 21;
+    }
+    else {
+        maksimum_dokter = MAKS_DOKTER_PER_SHIFT; 
+    }
+
+    // Loop untuk assign tiap dokter
+    for (int i = 0; i < *jumlah_dokter && daftarDokterPerShift_->count_doc < maksimum_dokter; i++) {
+        dokter* dokter_Temp = &daftardokter_[i];
+        if (dokter_Temp->shiftmingguan >= dokter_Temp->maxShift){
+            continue;
+        }
+
+        if (strcmp(dokter_Temp->preferensi, shiftLabel[jenisShift]) == 0) {
+            daftarDokterPerShift_->dokter[daftarDokterPerShift_->count_doc++] = dokter_Temp;
+            dokter_Temp->shiftmingguan++;
+            dokter_Temp->currShift++;
+        }
+    }
+
+    // Cek kondisi apabila ada yang belum terisi
+    for (int i = 0; i < *jumlah_dokter && daftarDokterPerShift_->count_doc < maksimum_dokter; i++) {
+        dokter* dokter_Temp = &daftardokter_[i];
+        if (dokter_Temp->shiftmingguan >= dokter_Temp->maxShift){
+            continue;
+        }
+
+        daftarDokterPerShift_->dokter[daftarDokterPerShift_->count_doc++] = dokter_Temp;
+        dokter_Temp->shiftmingguan++;
+        dokter_Temp->currShift++;
+    }
 }
 
-void penjadwalan(dokter* daftar, int* jumlah_dokter){
-    dokter* tempDaftar = salinDaftarDokter(daftarDokter, jumlah_dokter); // Salin Data agar tidak berubah
 
-    if (HitungJumlahShift(&tempDaftar, jumlah_dokter) < JUMLAH_SHIFT_PER_MINGGU){
+// Fungsi utama penjadwalan
+void penjadwalan(dokter* daftardokter_, int* jumlah_dokter, hari** jadwal_){
+    dokter* tempDaftar = salinDaftarDokter(daftardokter_, *jumlah_dokter);
+    int jumlah_shift = HitungJumlahShift(tempDaftar, *jumlah_dokter);
+    if ( jumlah_shift < JUMLAH_SHIFT_PER_MINGGU){
         printf("Jumlah shift tidak cukup. Tambahkan dokter atau naikkan shift maksimal.\n");
+        free(tempDaftar);
         return;
     }
 
     for (int hariKe = 0; hariKe < JUMLAH_HARI; hariKe++) {
-        if (hariKe % 7 == 0) {
-            resetMingguan(&tempDaftar, jumlah_dokter);
+        if (jadwal_[hariKe] == NULL) {
+            jadwal_[hariKe] = malloc(sizeof(hari));
         }
-        bubbleSortDokter(&tempDaftar, jumlah_dokter);
-        AssignDokter(&tempDaftar, jumlah_dokter);
     }
 
+    for (int hariKe = 0; hariKe < JUMLAH_HARI; hariKe++) {
+        if (hariKe % 7 == 0) {
+            resetMingguan(tempDaftar, *jumlah_dokter);
+        }
+        bubbleSortDokter(tempDaftar, *jumlah_dokter);
+
+        jadwal_[hariKe]->pagi = malloc(sizeof(shift));
+        jadwal_[hariKe]->siang = malloc(sizeof(shift));
+        jadwal_[hariKe]->malam = malloc(sizeof(shift));
+
+        jadwal_[hariKe]->pagi->dokter = malloc(sizeof(dokter*) * MAKS_DOKTER_PER_SHIFT);
+        jadwal_[hariKe]->siang->dokter = malloc(sizeof(dokter*) * MAKS_DOKTER_PER_SHIFT);
+        jadwal_[hariKe]->malam->dokter = malloc(sizeof(dokter*) * MAKS_DOKTER_PER_SHIFT);
+
+        AssignDokter(jadwal_[hariKe]->pagi, tempDaftar, 0, jumlah_dokter, jumlah_shift);
+        AssignDokter(jadwal_[hariKe]->siang, tempDaftar, 1, jumlah_dokter, jumlah_shift);
+        AssignDokter(jadwal_[hariKe]->malam, tempDaftar, 2, jumlah_dokter, jumlah_shift);
+    }
+    free(tempDaftar);
+}
+
+
+void tampilkanJadwal(hari** jadwal_, int jumlah_hari) {
+    const char* namaShift[] = {"Pagi", "Siang", "Malam"};
+
+    for (int h = 0; h < jumlah_hari; h++) {
+        printf("Hari ke-%d:\n", h + 1);
+
+        shift* daftarShift[] = {
+            jadwal_[h]->pagi,
+            jadwal_[h]->siang,
+            jadwal_[h]->malam
+        };
+
+        for (int s = 0; s < 3; s++) {
+            printf("  Shift %s:\n", namaShift[s]);
+            if (daftarShift[s] == NULL || daftarShift[s]->count_doc == 0) {
+                printf("    Tidak ada dokter.\n");
+            } else {
+                for (int i = 0; i < daftarShift[s]->count_doc; i++) {
+                    printf("    - %s\n", daftarShift[s]->dokter[i]->nama);
+                }
+            }
+        }
+        printf("\n");
+    }
 }
 
 
 
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Main Program ----------------------------------------------------------------------------------------
 
@@ -209,67 +300,90 @@ int main(){
     int kapasitas = 0;
     
     int menu;
-    do{
-        printf("\n=== MENU ===\n");
-        printf("1. Tambah Dokter\n");
-        printf("2. Hapus Dokter\n");
-        printf("3. Tampilkan Dokter\n");
-        printf("4. Baca File CSV\n");
-        printf("5. Assign Dokter\n");
-        printf("0. Kembali\n");
-        printf("Pilihan menu: ");
-        scanf("%d", &menu);
+
+    printf("\n");
+    printf("============================================================\n");
+    printf("  _______                        _   _                       \n");
+    printf(" |__   __|                      | \\ | |                      \n");
+    printf("    | | __ _ _ __  _ __   __ _  |  \\| | __ _ _ __ ___   __ _ \n");
+    printf("    | |/ _` | '_ \\| '_ \\ / _` | | . ` |/ _` | '_ ` _ \\ / _` |\n");
+    printf("    | | (_| | | | | |_) | (_| | | |\\  | (_| | | | | | | (_| |\n");
+    printf("    |_|\\__,_|_| |_| .__/ \\__,_| |_| \\_|\\__,_|_| |_| |_|\\__,_|\n");
+    printf("                  | |                                        \n");
+    printf("                  |_|                                        \n");
+    printf("\n");
+    printf("           >>>  SISTEM PENJADWALAN DOKTER  <<<              \n");
+    printf("           >>>  By Kelompok 6              <<<              \n");
+    printf("============================================================\n");
+
+    int berhasilmembaca = 0;
+    while(berhasilmembaca == 0){
+        char namaFile[50];
+        printf("Masukkan nama file CSV: ");
+        scanf("%s", namaFile);
         getchar();
+        bacaFile(namaFile, &daftarDokter, &jumlahDokter, &kapasitas, &berhasilmembaca);
+        if (berhasilmembaca == 1){
+            do{
+                printf("============================================================\n");
+                printf("               Silahkan Pilih Menu Yang Tersedia   \n");
+                printf("============================================================\n");
+                printf("");
+                printf("======================== MENU =============================\n");
+                printf("1. Tambah Dokter\n");
+                printf("2. Hapus Dokter\n");
+                printf("3. Tampilkan Dokter\n");
+                printf("4. Assign Dokter\n");
+                printf("0. Kembali\n");
+                printf("Pilihan menu: ");
+                scanf("%d", &menu);
+                getchar();
 
-        if (menu == 1){
-            dokter baru;
-            printf("Nama dokter: ");
-            fgets(baru.nama, sizeof(baru.nama), stdin);
-            baru.nama[strcspn(baru.nama, "\n")] = '\0';
+                if (menu == 1){
+                    dokter baru;
+                    printf("Nama dokter: ");
+                    fgets(baru.nama, sizeof(baru.nama), stdin);
+                    baru.nama[strcspn(baru.nama, "\n")] = '\0';
 
-            printf("Maksimal shift per minggu: ");
-            scanf("%d", &baru.maxShift);
-            getchar();
+                    printf("Maksimal shift per minggu: ");
+                    scanf("%d", &baru.maxShift);
+                    getchar();
 
-            printf("Preferensi shift (Pagi/Siang/Malam): ");
-            fgets(baru.preferensi, sizeof(baru.preferensi), stdin);
-            baru.preferensi[strcspn(baru.preferensi, "\n")] = '\0';
+                    printf("Preferensi shift (Pagi/Siang/Malam): ");
+                    fgets(baru.preferensi, sizeof(baru.preferensi), stdin);
+                    baru.preferensi[strcspn(baru.preferensi, "\n")] = '\0';
 
-            tambahDokter(&daftarDokter, &jumlahDokter, &kapasitas, baru);
-        }
+                    tambahDokter(&daftarDokter, &jumlahDokter, &kapasitas, baru);
+                }
 
-        else if (menu == 2){
-            char namaHapus[20];
-            printf("Nama dokter yang ingin dihapus: ");
-            fgets(namaHapus, sizeof(namaHapus), stdin);
-            namaHapus[strcspn(namaHapus, "\n")] = '\0';
-            hapusDokter(daftarDokter, &jumlahDokter, namaHapus);
-        }
+                else if (menu == 2){
+                    char namaHapus[20];
+                    printf("Nama dokter yang ingin dihapus: ");
+                    fgets(namaHapus, sizeof(namaHapus), stdin);
+                    namaHapus[strcspn(namaHapus, "\n")] = '\0';
+                    hapusDokter(daftarDokter, &jumlahDokter, namaHapus);
+                }
 
-        else if (menu == 3){
-            tampilkanDokter(daftarDokter, jumlahDokter);
-        }
+                else if (menu == 3){
+                    tampilkanDokter(daftarDokter, jumlahDokter);
+                }
 
-        else if (menu == 4){
-            char namaFile[50];
-            printf("Masukkan nama file CSV: ");
-            scanf("%s", namaFile);
-            getchar();
-            bacaFile(namaFile, &daftarDokter, &jumlahDokter, &kapasitas);
-        }
+                else if (menu == 4){
+                    penjadwalan(daftarDokter, &jumlahDokter, jadwal);
+                    tampilkanJadwal(jadwal, 30);
+                }
 
-        else if (menu == 5){
-            penjadwalan(&daftarDokter, &jumlahDokter);
-        }
-
-        else if (menu == 0){
-            printf("Terima kasih!\n");
+                else if (menu == 0){
+                    printf("Terima kasih!\n");
+                    break;
+                }
+                else{
+                    printf("Menu tidak tersedia!\n");
+                }
+            } while (menu != 0);
             break;
         }
-        else{
-            printf("Menu tidak tersedia!\n");
-        }
-    } while (menu != 0);
+    }
     free(daftarDokter);
     return 0;
 }
