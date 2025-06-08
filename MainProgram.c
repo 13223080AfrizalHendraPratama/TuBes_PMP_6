@@ -181,7 +181,8 @@ void bubbleSortDokter(dokter *daftardokter_, int jumlah) {
     }
 }
 
-// Menugaskan dokter ke shift sesuai preferensi
+// Menugaskan dokter ke shift sesuai preferensi dan memastikan apakah ada yang kosong atau tidak
+// Format input : array of struct daftarDokterPerShift_ , struct daftardokter_ , int jenis shift (0,1,2) , int jumlah_dokter, int totalshift tersedia
 void AssignDokter(shift* daftarDokterPerShift_, dokter *daftardokter_, int jenisShift, int* jumlah_dokter, int totalShifttersedia){
 
 }
@@ -209,6 +210,7 @@ void penjadwalan(dokter* daftardokter_, int* jumlah_dokter, hari** jadwal_){
         }
         bubbleSortDokter(tempDaftar, *jumlah_dokter);
 
+        // Deklarasi Dnynamic Array 
         jadwal_[hariKe]->pagi = malloc(sizeof(shift));
         jadwal_[hariKe]->siang = malloc(sizeof(shift));
         jadwal_[hariKe]->malam = malloc(sizeof(shift));
@@ -217,9 +219,10 @@ void penjadwalan(dokter* daftardokter_, int* jumlah_dokter, hari** jadwal_){
         jadwal_[hariKe]->siang->dokter = malloc(sizeof(dokter*) * MAKS_DOKTER_PER_SHIFT);
         jadwal_[hariKe]->malam->dokter = malloc(sizeof(dokter*) * MAKS_DOKTER_PER_SHIFT);
 
-        AssignDokter(jadwal_[hariKe]->pagi, tempDaftar, 0, jumlah_dokter, jumlah_shift);
-        AssignDokter(jadwal_[hariKe]->siang, tempDaftar, 1, jumlah_dokter, jumlah_shift);
-        AssignDokter(jadwal_[hariKe]->malam, tempDaftar, 2, jumlah_dokter, jumlah_shift);
+        // Panggil Fungsi Assign Dokter
+        AssignDokter(jadwal_[hariKe]->pagi, tempDaftar, 0, jumlah_dokter, jumlah_shift); // 
+        AssignDokter(jadwal_[hariKe]->siang, tempDaftar, 1, jumlah_dokter, jumlah_shift); // 
+        AssignDokter(jadwal_[hariKe]->malam, tempDaftar, 2, jumlah_dokter, jumlah_shift); //
     }
     free(tempDaftar);
 }
