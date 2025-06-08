@@ -168,17 +168,45 @@ void resetMingguan(dokter* daftardokter_, int jumlah) {
 }
 
 // Urutkan dokter berdasarkan jumlah shift yang sudah diambil
-void bubbleSortDokter(dokter *daftardokter_, int jumlah) {
-    for (int i = 0; i < jumlah - 1; i++) {
-        for (int j = 0; j < jumlah - i - 1; j++) {
-            if (daftardokter_[j].currShift > daftardokter_[j + 1].currShift) {
-                dokter temp = daftardokter_[j];
-                daftardokter_[j] = daftardokter_[j + 1];
-                daftardokter_[j + 1] = temp;
-            }
+void merge(dokter* arr, int left, int mid, int right) {
+    int i = left;
+    int j = mid + 1;
+    int k = 0;
+    int n = right - left + 1;
+
+    dokter* temp = malloc(sizeof(dokter) * n);
+
+    while (i <= mid && j <= right) {
+        if (arr[i].currShift > arr[j].currShift) {
+            temp[k++] = arr[i++];
+        } else {
+            temp[k++] = arr[j++];
         }
     }
+
+    while (i <= mid) {
+        temp[k++] = arr[i++];
+    }
+    while (j <= right) {
+        temp[k++] = arr[j++];
+    }
+
+    for (i = left, k = 0; i <= right; i++, k++) {
+        arr[i] = temp[k];
+    }
+
+    free(temp);
 }
+
+void mergesort(dokter* arr, int left, int right) {
+    if (left < right) {
+        int mid = (left + right) / 2;
+        mergesort(arr, left, mid);
+        mergesort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
+    }
+}
+
 
 // Menugaskan dokter ke shift sesuai preferensi dan memastikan apakah ada yang kosong atau tidak
 // Format input : array of struct daftarDokterPerShift_ , struct daftardokter_ , int jenis shift (0,1,2) , int jumlah_dokter, int totalshift tersedia
@@ -214,7 +242,7 @@ void penjadwalan(dokter* daftardokter_, int* jumlah_dokter, hari** jadwal_){
         if (hariKe % 7 == 0) {
             resetMingguan(tempDaftar, *jumlah_dokter);
         }
-        bubbleSortDokter(tempDaftar, *jumlah_dokter);
+        mergesort(tempDaftar, 0, *jumlah_dokter);
 
         // Deklarasi Dnynamic Array 
         jadwal_[hariKe]->pagi = malloc(sizeof(shift));
