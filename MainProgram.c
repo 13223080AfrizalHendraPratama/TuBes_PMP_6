@@ -210,6 +210,7 @@ void penjadwalan(dokter* daftardokter_, int* jumlah_dokter, hari** jadwal_){
 
     // Loop setiap minggu untuk assign dokter -> Jadwal
     for (int hariKe = 0; hariKe < JUMLAH_HARI; hariKe++) {
+        // Kondisi ketika sudah loop 1 minggu (7 hari)
         if (hariKe % 7 == 0) {
             resetMingguan(tempDaftar, *jumlah_dokter);
         }
