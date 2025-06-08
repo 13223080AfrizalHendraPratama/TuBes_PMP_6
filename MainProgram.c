@@ -143,7 +143,6 @@ void bacaFile(const char* namaFile, dokter** daftar, int* jumlah, int* kapasitas
 // Fungsi 2 - Assign Jadwal Dokter --------------------------------------------------------------------
 
 // Fungsi menyalin daftar dokter
-
 dokter* salinDaftarDokter(dokter* sumber, int jumlah) {
     dokter* temp = malloc(sizeof(dokter) * jumlah);
     for (int i = 0; i < jumlah; i++) {
@@ -190,20 +189,26 @@ void AssignDokter(shift* daftarDokterPerShift_, dokter *daftardokter_, int jenis
 
 // Fungsi utama penjadwalan
 void penjadwalan(dokter* daftardokter_, int* jumlah_dokter, hari** jadwal_){
+
+    // Deklarasi dan menyalin data dokter
     dokter* tempDaftar = salinDaftarDokter(daftardokter_, *jumlah_dokter);
     int jumlah_shift = HitungJumlahShift(tempDaftar, *jumlah_dokter);
+
+    // kondisi apabila tidak memenuhi shift
     if ( jumlah_shift < JUMLAH_SHIFT_PER_MINGGU){
         printf("Jumlah shift tidak cukup. Tambahkan dokter atau naikkan shift maksimal.\n");
         free(tempDaftar);
         return;
     }
 
+    // Declare memory array jadwal
     for (int hariKe = 0; hariKe < JUMLAH_HARI; hariKe++) {
         if (jadwal_[hariKe] == NULL) {
             jadwal_[hariKe] = malloc(sizeof(hari));
         }
     }
 
+    // Loop setiap minggu untuk assign dokter -> Jadwal
     for (int hariKe = 0; hariKe < JUMLAH_HARI; hariKe++) {
         if (hariKe % 7 == 0) {
             resetMingguan(tempDaftar, *jumlah_dokter);
