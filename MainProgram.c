@@ -183,45 +183,7 @@ void bubbleSortDokter(dokter *daftardokter_, int jumlah) {
 
 // Menugaskan dokter ke shift sesuai preferensi
 void AssignDokter(shift* daftarDokterPerShift_, dokter *daftardokter_, int jenisShift, int* jumlah_dokter, int totalShifttersedia){
-    int maksimum_dokter;
-    const char* shiftLabel[] = {"pagi", "siang", "malam"};
-    daftarDokterPerShift_->count_doc = 0;
-    
-    int batas_shift = MAKS_DOKTER_PER_SHIFT * 21;
 
-    // Cek apakah total shift tersedia mencukupi atau tidak
-    if (totalShifttersedia < batas_shift){
-        maksimum_dokter = totalShifttersedia / 21;
-    }
-    else {
-        maksimum_dokter = MAKS_DOKTER_PER_SHIFT; 
-    }
-
-    // Loop untuk assign tiap dokter
-    for (int i = 0; i < *jumlah_dokter && daftarDokterPerShift_->count_doc < maksimum_dokter; i++) {
-        dokter* dokter_Temp = &daftardokter_[i];
-        if (dokter_Temp->shiftmingguan >= dokter_Temp->maxShift){
-            continue;
-        }
-
-        if (strcmp(dokter_Temp->preferensi, shiftLabel[jenisShift]) == 0) {
-            daftarDokterPerShift_->dokter[daftarDokterPerShift_->count_doc++] = dokter_Temp;
-            dokter_Temp->shiftmingguan++;
-            dokter_Temp->currShift++;
-        }
-    }
-
-    // Cek kondisi apabila ada yang belum terisi
-    for (int i = 0; i < *jumlah_dokter && daftarDokterPerShift_->count_doc < maksimum_dokter; i++) {
-        dokter* dokter_Temp = &daftardokter_[i];
-        if (dokter_Temp->shiftmingguan >= dokter_Temp->maxShift){
-            continue;
-        }
-
-        daftarDokterPerShift_->dokter[daftarDokterPerShift_->count_doc++] = dokter_Temp;
-        dokter_Temp->shiftmingguan++;
-        dokter_Temp->currShift++;
-    }
 }
 
 
