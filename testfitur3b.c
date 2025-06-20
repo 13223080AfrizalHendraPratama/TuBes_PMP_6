@@ -59,6 +59,40 @@ void hitung_shift_per_dokter(dokter datadokter[], int total_dokter, hari* jadwal
     }
 }
 
+//untuk pengecekan pengunaan, hapus dari komen dan jalankan int main
+
+/*
 int main (){
-    
+    dokter d1 = {"dr. Rina", 15, 5, "pagi", 0};
+dokter d2 = {"dr. Budi", 10, 3, "malam", 0};
+
+dokter datadokter[2] = {d1, d2};
+int total_dokter = 2;
+
+// Buat hari ke-1
+hari* h1 = malloc(sizeof(hari));
+h1->pagi = malloc(sizeof(shift));
+h1->pagi->dokter = malloc(sizeof(dokter*) * 1);
+h1->pagi->dokter[0] = &datadokter[1]; // dr. Budi disuruh shift pagi
+h1->pagi->count_doc = 1;
+
+h1->siang = malloc(sizeof(shift));
+h1->siang->dokter = malloc(sizeof(dokter*) * 1);
+h1->siang->dokter[0] = &datadokter[0]; // dr. Rina disuruh shift siang
+h1->siang->count_doc = 1;
+
+h1->malam = malloc(sizeof(shift));
+h1->malam->dokter = NULL;
+h1->malam->count_doc = 0;
+
+hari* jadwal[1] = {h1};
+
+hitung_shift_per_dokter(datadokter, 2, jadwal, 1);
+
 }
+*/
+
+
+
+
+
